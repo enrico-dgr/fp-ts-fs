@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"noEmit": true,
+		"target": "es5",
+		"outDir": "./dist/lib",
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"lib": ["ES2022"],
+		"sourceMap": true,
+		"esModuleInterop": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"forceConsistentCasingInFileNames": true,
+		"stripInternal": true,
+		"declaration": true
+	},
+	"include": ["./src"],
+	"exclude": ["node_modules", "**/node_modules/*", "dist", "docs"]
+}
