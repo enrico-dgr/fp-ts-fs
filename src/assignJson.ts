@@ -12,7 +12,7 @@ type Deps = {
   output: fs.PathOrFileDescriptor
 }
 
-const assignJson = ({ paths, options, output }: Deps) =>
+export const assignJson = ({ paths, options, output }: Deps) =>
   pipe(
     paths,
     A.map((path) => readJsonSync(path, options)),
@@ -36,5 +36,3 @@ const assignJson = ({ paths, options, output }: Deps) =>
     ),
     E.chain((jsonStr) => writeFile(output, jsonStr))
   )
-
-export default assignJson

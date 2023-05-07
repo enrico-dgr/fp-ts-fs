@@ -8,8 +8,9 @@
   },
   "scripts": {},
   "peerDependencies": {
-    "fp-ts": "^2.13.1",
-    "@enrico-dgr/fp-ts-logger": "../fp-ts-logger"
+    "fp-ts": "^2.13.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@enrico-dgr/fp-ts-logger": "^0.1.0"
+  }
 }

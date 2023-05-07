@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/function'
 import * as E from 'fp-ts/Either'
-import assignJson from '../src/assignJson'
+import { assignJson } from '../src/assignJson'
 import { logger  } from '@enrico-dgr/fp-ts-logger'
 import path from 'path'
 
