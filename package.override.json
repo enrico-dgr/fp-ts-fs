@@ -1,0 +1,15 @@
+{
+  "main": "lib/index.js",
+  "module": "es6/index.js",
+  "typings": "lib/index.d.ts",
+  "bin": {
+    "css-amp": "lib/bin/css-amp.js",
+    "optimizeCss": "lib/bin/optimizeCss.js"
+  },
+  "scripts": {},
+  "peerDependencies": {
+    "fp-ts": "^2.13.1",
+    "@enrico-dgr/fp-ts-logger": "../fp-ts-logger"
+  },
+  "dependencies": {}
+}
