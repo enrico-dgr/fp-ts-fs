@@ -1,5 +1,5 @@
 export * from "./assignJson";
 export * from "./readFile";
-export * from "./readFiles";
+export { readFilesSync } from "./readFiles";
 export * from "./readJson";
 export * from "./writeFile";

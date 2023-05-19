@@ -17,6 +17,6 @@
 		"stripInternal": true,
 		"declaration": true
 	},
-	"include": ["./src"],
+	"include": ["./src", "__tests__/readFiles.test.ts"],
 	"exclude": ["node_modules", "**/node_modules/*", "dist", "docs"]
 }

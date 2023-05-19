@@ -1,0 +1,9 @@
+{
+  "manager": "yarn",
+  "copy": [
+    {
+      "name": "fp-ts-logger",
+      "path": "glob"
+    }
+  ]
+}
