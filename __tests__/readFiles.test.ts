@@ -1,26 +1,15 @@
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import { readFilesSync } from "../src/readFiles";
+import { readFilesSyncNew } from '../src/readFiles'
+import path from 'path'
 
-describe("Read Files", () => {
-  it("Sync", () => {
+describe('Read Files', () => {
+  it('Sync', () => {
+    const basePath = path.join(__dirname, './mocks')
 
-    const res = readFilesSync('./mocks/*');
-    
-    expect(res).toBe({
-      _tag: "Right"
-    });
+    const res = readFilesSyncNew({ paths: [`${basePath}/.*`] })
 
-    pipe(
-      res,
-      E.map(r => {
-        expect(r[0].name).toBe('example1.txt');
-        expect(r[0].content).toBe('Simple text');
-      }),
-      E.mapLeft(e => {
-        expect(e.message).toBe('');
-        expect(e.stack).toBe('');
-      })
-    )
-  });
-});
+    expect(res.length).toBe(1)
+
+    expect(res[0].path).toBe(path.join(basePath, 'example1.txt'))
+    expect(res[0].content).toBe('Simple text')
+  })
+})

@@ -1,6 +1,10 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import fs from 'fs'
+import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
+import { readFileSync } from './readFile'
+import { bufferToString } from './utils'
+import { readDirSync } from './readDir'
 
 const recogniseGlobType = (
   pattern: string
@@ -137,13 +141,113 @@ const queryPathAll = (globPath: string): E.Either<Error, string[]> =>
 
 export const readFilesSync = flow(
   queryPathAll,
-  E.map((paths) => paths.map((path) => {
-    const file = fs.readFileSync(path);
-    const splittedPath = path.split('/');
+  E.map((paths) =>
+    paths.map((path) => {
+      const file = fs.readFileSync(path)
+      const splittedPath = path.split('/')
 
-    return ({
-      name: splittedPath[splittedPath.length - 1],
-      content: file.toString()
+      return {
+        name: splittedPath[splittedPath.length - 1],
+        content: file.toString(),
+      }
     })
-  }))
+  )
 )
+
+export const simplePathMatches = (path: string) =>
+  pipe(
+    readFileSync(path),
+    E.chain(bufferToString),
+    E.match(
+      () => [], // Ignoring error. E.g. It's the path of a directory
+      (r) => [{ path, content: r }]
+    )
+  )
+
+export const doubleStarMatch = (
+  splitted: string[],
+  indexOfFirstPattern: number
+) => {
+  const basePath = '/' + splitted.slice(0, indexOfFirstPattern).join('/')
+
+  const completeDirentPath = (dirent: fs.Dirent) => {
+    let suffix = ''
+    let restOfPath = ''
+
+    if (dirent.isDirectory() && splitted.length > indexOfFirstPattern + 1) {
+      restOfPath = splitted.slice(indexOfFirstPattern + 1).join('/')
+      suffix = `/**/${restOfPath}`
+    }
+
+    return basePath + dirent.name + suffix
+  }
+
+  return pipe(
+    readDirSync(basePath, { withFileTypes: true }),
+    E.match(() => [], A.map(completeDirentPath))
+  )
+}
+
+const regexMatch = (splitted: string[], indexOfFirstPattern: number) => {
+  const basePath = splitted.slice(0, indexOfFirstPattern).join('/')
+
+  const testRegex = (dirent: fs.Dirent) => {
+    const regex = new RegExp(splitted[indexOfFirstPattern])
+
+    return regex.test(dirent.name)
+  }
+
+  const completeDirentPath = (dirent: fs.Dirent) => {
+    let suffix = ''
+    let restOfPath = ''
+
+    if (dirent.isDirectory() && splitted.length > indexOfFirstPattern + 1) {
+      restOfPath = splitted.slice(indexOfFirstPattern + 1).join('/')
+      suffix = `/${restOfPath}`
+    }
+
+    return basePath + dirent.name + suffix
+  }
+
+  return pipe(
+    readDirSync(basePath, { withFileTypes: true }),
+    E.map(A.filter(testRegex)),
+    E.match((_e) => [], A.map(completeDirentPath))
+  )
+}
+
+const testPatternPresence = (str: string) => /[\*\(\)]/.test(str)
+
+type FileInfos = {
+  path: string
+  content: string
+}
+
+const patternMatch = (splitted: string[], indexOfFirstPattern: number) =>
+  splitted[indexOfFirstPattern].search(/^\*\*$/) > -1
+    ? doubleStarMatch(splitted, indexOfFirstPattern)
+    : regexMatch(splitted, indexOfFirstPattern)
+
+export const findPathMatches = (path: string): FileInfos[] =>
+  pipe(
+    path.split('\\/'),
+    (splitted) => ({
+      splitted,
+      indexOfFirstRegex: splitted.findIndex(testPatternPresence),
+    }),
+    ({ splitted, indexOfFirstRegex: indexOfFirstPattern }) =>
+      indexOfFirstPattern < 0
+        ? simplePathMatches(path)
+        : pipe(
+            patternMatch(splitted, indexOfFirstPattern),
+            A.flatMap(findPathMatches)
+          ),
+    () => []
+  )
+
+type Deps = {
+  paths: string[]
+}
+
+export const readFilesSyncNew = ({ paths }: Deps) =>
+  pipe(paths, A.flatMap(findPathMatches))
