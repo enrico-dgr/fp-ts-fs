@@ -5,6 +5,7 @@ import * as E from 'fp-ts/Either'
 import { readFileSync } from './readFile'
 import { bufferToString } from './utils'
 import { readDirSync } from './readDir'
+import path from 'path'
 
 const recogniseGlobType = (
   pattern: string
@@ -154,42 +155,65 @@ export const readFilesSync = flow(
   )
 )
 
+const SEPARATOR = process.platform === 'win32' ? '\\' : '/'
+
 export const simplePathMatches = (path: string) =>
   pipe(
     readFileSync(path),
     E.chain(bufferToString),
-    E.match(
-      () => [], // Ignoring error. E.g. It's the path of a directory
-      (r) => [{ path, content: r }]
-    )
+    E.map((r) => [{ path, content: r }])
   )
 
 export const doubleStarMatch = (
   splitted: string[],
   indexOfFirstPattern: number
 ) => {
-  const basePath = '/' + splitted.slice(0, indexOfFirstPattern).join('/')
+  const basePath = splitted.slice(0, indexOfFirstPattern).join(SEPARATOR)
+  let filesBasePath = path.join(...splitted.slice(0, indexOfFirstPattern))
 
   const completeDirentPath = (dirent: fs.Dirent) => {
     let suffix = ''
-    let restOfPath = ''
+    let restOfPath = []
 
     if (dirent.isDirectory() && splitted.length > indexOfFirstPattern + 1) {
-      restOfPath = splitted.slice(indexOfFirstPattern + 1).join('/')
-      suffix = `/**/${restOfPath}`
+      restOfPath = splitted.slice(indexOfFirstPattern + 1)
+      suffix = path.join('**', ...restOfPath)
     }
 
-    return basePath + dirent.name + suffix
+    return path.join(filesBasePath, dirent.name, suffix)
   }
 
   return pipe(
     readDirSync(basePath, { withFileTypes: true }),
-    E.match(() => [], A.map(completeDirentPath))
+    E.map(
+      A.map((dirent) =>
+        E.tryCatch(
+          () => completeDirentPath(dirent),
+          (e) => {
+            const err = e as Error
+            return err
+          }
+        )
+      )
+    ),
+    E.chain(
+      A.reduce(E.right<Error, string[]>([]), (pathsAccumulator, path_) =>
+        pipe(
+          pathsAccumulator,
+          E.map((paths) =>
+            pipe(
+              path_,
+              E.reduce(paths, (paths_, path) => [...paths_, path])
+            )
+          )
+        )
+      )
+    )
   )
 }
 
 const regexMatch = (splitted: string[], indexOfFirstPattern: number) => {
-  const basePath = splitted.slice(0, indexOfFirstPattern).join('/')
+  const basePath = splitted.slice(0, indexOfFirstPattern).join(SEPARATOR)
 
   const testRegex = (dirent: fs.Dirent) => {
     const regex = new RegExp(splitted[indexOfFirstPattern])
@@ -203,7 +227,7 @@ const regexMatch = (splitted: string[], indexOfFirstPattern: number) => {
 
     if (dirent.isDirectory() && splitted.length > indexOfFirstPattern + 1) {
       restOfPath = splitted.slice(indexOfFirstPattern + 1).join('/')
-      suffix = `/${restOfPath}`
+      suffix = `${SEPARATOR}${restOfPath}`
     }
 
     return basePath + dirent.name + suffix
@@ -212,11 +236,34 @@ const regexMatch = (splitted: string[], indexOfFirstPattern: number) => {
   return pipe(
     readDirSync(basePath, { withFileTypes: true }),
     E.map(A.filter(testRegex)),
-    E.match((_e) => [], A.map(completeDirentPath))
+    E.map(
+      A.map((dirent) =>
+        E.tryCatch(
+          () => completeDirentPath(dirent),
+          (e) => {
+            const err = e as Error
+            return err
+          }
+        )
+      )
+    ),
+    E.chain(
+      A.reduce(E.right<Error, string[]>([]), (pathsAccumulator, path_) =>
+        pipe(
+          pathsAccumulator,
+          E.map((paths) =>
+            pipe(
+              path_,
+              E.reduce(paths, (paths_, path) => [...paths_, path])
+            )
+          )
+        )
+      )
+    )
   )
 }
 
-const testPatternPresence = (str: string) => /[\*\(\)]/.test(str)
+export const testPatternPresence = (str: string) => /[\*\(\)]/.test(str)
 
 type FileInfos = {
   path: string
@@ -228,9 +275,26 @@ const patternMatch = (splitted: string[], indexOfFirstPattern: number) =>
     ? doubleStarMatch(splitted, indexOfFirstPattern)
     : regexMatch(splitted, indexOfFirstPattern)
 
-export const findPathMatches = (path: string): FileInfos[] =>
+export const splitPath = (path: string) => path.split(SEPARATOR)
+
+const reduceEitherFileInfosArr = A.reduce<
+  E.Either<Error, FileInfos[]>,
+  E.Either<Error, FileInfos[]>
+>(E.right<Error, FileInfos[]>([]), (eitherAcc, fileInfos_) =>
   pipe(
-    path.split('\\/'),
+    eitherAcc,
+    E.map((fileInfosAcc) =>
+      pipe(
+        fileInfos_,
+        E.reduce(fileInfosAcc, (fileInfosAcc_, f) => [...fileInfosAcc_, ...f])
+      )
+    )
+  )
+)
+
+export const findPathMatches = (path: string): E.Either<Error, FileInfos[]> =>
+  pipe(
+    splitPath(path),
     (splitted) => ({
       splitted,
       indexOfFirstRegex: splitted.findIndex(testPatternPresence),
@@ -240,9 +304,8 @@ export const findPathMatches = (path: string): FileInfos[] =>
         ? simplePathMatches(path)
         : pipe(
             patternMatch(splitted, indexOfFirstPattern),
-            A.flatMap(findPathMatches)
-          ),
-    () => []
+            E.chain(flow(A.map(findPathMatches), reduceEitherFileInfosArr))
+          )
   )
 
 type Deps = {
@@ -250,4 +313,4 @@ type Deps = {
 }
 
 export const readFilesSyncNew = ({ paths }: Deps) =>
-  pipe(paths, A.flatMap(findPathMatches))
+  pipe(paths, A.map(findPathMatches))
