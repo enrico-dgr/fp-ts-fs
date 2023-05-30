@@ -164,5 +164,5 @@ type Deps = {
   paths: string[]
 }
 
-export const readFilesSyncNew = ({ paths }: Deps) =>
+export const readFilesSync = ({ paths }: Deps) =>
   pipe(paths, A.map(findPathMatches), reduceEitherFileInfosArr)

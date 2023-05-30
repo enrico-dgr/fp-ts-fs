@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/function'
 import * as E from 'fp-ts/Either'
 import {
   doubleStarMatch,
-  readFilesSyncNew,
+  readFilesSync,
   regexMatch,
   simplePathMatches,
   splitPath,
@@ -80,7 +80,7 @@ describe('Read Files', () => {
 
   it('Read files sync', () => {
     pipe(
-      readFilesSyncNew({
+      readFilesSync({
         paths: [path.join(__dirname, '**', 'ex.*1\.txt')],
       }),
       E.map((paths) => {
@@ -94,7 +94,7 @@ describe('Read Files', () => {
     )
 
     pipe(
-      readFilesSyncNew({
+      readFilesSync({
         paths: [path.join(__dirname, '**', 'ex.*2\.txt')],
       }),
       E.map((paths) => {
