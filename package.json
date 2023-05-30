@@ -1,6 +1,6 @@
 {
   "name": "@enrico-dgr/fp-ts-fs",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "repository": "https://github.com/enrico-dgr/fp-ts-fs.git",
   "author": "enrico-dgr <enrico.digrazia98@gmail.com>",
   "license": "MIT",

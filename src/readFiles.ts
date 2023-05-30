@@ -117,7 +117,7 @@ export const regexMatch = (splitted: string[], indexOfFirstPattern: number) => {
 
 export const testPatternPresence = (str: string) => /[\*\(\)]/.test(str)
 
-type FileInfos = {
+export type FileInfo = {
   path: string
   content: string
 }
@@ -130,9 +130,9 @@ const patternMatch = (splitted: string[], indexOfFirstPattern: number) =>
 export const splitPath = (path: string) => path.split(SEPARATOR)
 
 const reduceEitherFileInfosArr = A.reduce<
-  E.Either<Error, FileInfos[]>,
-  E.Either<Error, FileInfos[]>
->(E.right<Error, FileInfos[]>([]), (eitherAcc, fileInfos_) =>
+  E.Either<Error, FileInfo[]>,
+  E.Either<Error, FileInfo[]>
+>(E.right<Error, FileInfo[]>([]), (eitherAcc, fileInfos_) =>
   pipe(
     eitherAcc,
     E.map((fileInfosAcc) =>
@@ -144,7 +144,7 @@ const reduceEitherFileInfosArr = A.reduce<
   )
 )
 
-export const findPathMatches = (path: string): E.Either<Error, FileInfos[]> =>
+export const findPathMatches = (path: string): E.Either<Error, FileInfo[]> =>
   pipe(
     splitPath(path),
     (splitted) => ({
