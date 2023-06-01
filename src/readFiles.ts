@@ -9,11 +9,11 @@ import path from 'path'
 
 const SEPARATOR = process.platform === 'win32' ? '\\' : '/'
 
-export const simplePathMatches = (path: string) =>
+export const simplePathMatches = (path_: string): E.Either<Error, FileInfo[]> =>
   pipe(
-    readFileSync(path),
+    readFileSync(path_),
     E.chain(bufferToString),
-    E.map((r) => [{ path, content: r }])
+    E.map((r) => [{ path: path_, content: r, name: path.basename(path_) }])
   )
 
 export const doubleStarMatch = (
@@ -120,6 +120,7 @@ export const testPatternPresence = (str: string) => /[\*\(\)]/.test(str)
 export type FileInfo = {
   path: string
   content: string
+  name: string
 }
 
 const patternMatch = (splitted: string[], indexOfFirstPattern: number) =>

@@ -39,6 +39,7 @@ describe('Read Files', () => {
       example1,
       E.map(([firstRes]) => {
         expect(firstRes.content).toBe('Simple text')
+        expect(firstRes.name).toBe('example1.txt')
       })
     )
   })
