@@ -14,6 +14,8 @@ describe('Read Files', () => {
   const basePath = path.resolve(__dirname, './mocks')
   const example1Path = path.resolve(__dirname, './mocks/example1.txt')
   const example2Path = path.resolve(__dirname, './mocks/example2.txt')
+  const example1CssPath = path.resolve(__dirname, './mocks/example1.css')
+  const example2CssPath = path.resolve(__dirname, './mocks/example2.css')
   let splittedWithDoubleStar = ['']
   let splittedWithRegex = ['']
 
@@ -102,6 +104,20 @@ describe('Read Files', () => {
         expect(paths.length).toBe(1)
         expect(paths[0].path).toBe(example2Path)
         expect(paths[0].content).toBe('Simple text')
+      }),
+      either => {
+        expect(either._tag).toBe('Right')
+      }
+    )
+
+    pipe(
+      readFilesSync({
+        paths: [path.join(__dirname, '**', '.*\.css')],
+      }),
+      E.map((paths) => {
+        expect(paths.length).toBe(2)
+        expect(paths[0].path).toBe(example1CssPath)
+        expect(paths[1].path).toBe(example2CssPath)
       }),
       either => {
         expect(either._tag).toBe('Right')
